@@ -1,17 +1,4 @@
-## Makefile
-
-all:
-
-##################################################
-
-.PHONY: all build test clean
-
-all: build
-
-##############################
+.PHONY: build
 
 build:
-
-test: build
-
-clean:
+	sam build
