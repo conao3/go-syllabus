@@ -2,6 +2,13 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: 'go-syllabus'
 
+Parameters:
+  DomainName:
+    Type: String
+
+  HostedZoneId:
+    Type: String
+
 Globals:
   Function:
     Runtime: go1.x
@@ -9,6 +16,15 @@ Globals:
     Timeout: 10
 
 Resources:
+  ACMCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "api.syllabus.${DomainName}"
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Sub "api.syllabus.${DomainName}"
+          HostedZoneId: !Ref HostedZoneId
+
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
