@@ -1,8 +1,7 @@
 .PHONY: build
-
 build:
 	sam build
 
+.PHONY: deploy
 deploy: build
-	sam deploy --parameter-overrides $$(cat .env | tr '\n' ' ') --no-fail-on-empty-changeset
-
+	./script/deploy-syllabus.sh

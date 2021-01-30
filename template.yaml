@@ -3,13 +3,21 @@ Transform: AWS::Serverless-2016-10-31
 Description: 'go-syllabus'
 
 Parameters:
+  Project:
+    Type: String
+
   DomainName:
     Type: String
 
-  HostedZoneId:
+  DomainHostedZoneId:
     Type: String
 
 Globals:
+  Api:
+    Name: !Sub ${Project}-api
+    EndpointConfiguration:
+      Type: REGIONAL
+
   Function:
     Runtime: go1.x
     Handler: main
@@ -19,15 +27,46 @@ Resources:
   ACMCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !Sub "api.syllabus.${DomainName}"
+      DomainName:
+        Ref: DomainName
       ValidationMethod: DNS
       DomainValidationOptions:
-        - DomainName: !Sub "api.syllabus.${DomainName}"
-          HostedZoneId: !Ref HostedZoneId
+      - DomainName:
+          Ref: DomainName
+        HostedZoneId:
+          Ref: DomainHostedZoneId
+
+  ApiGatewayCustomDomainName:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      RegionalCertificateArn: !Ref ACMCertificate
+      DomainName: !Ref DomainName
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  BasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    DependsOn: ApiGatewayCustomDomainName
+    Properties:
+      DomainName: !Ref DomainName
+      RestApiId: !Ref ServerlessRestApi
+      Stage: Prod
+
+  CustomDomainRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: !Ref DomainName
+      Type: A
+      HostedZoneId: !Ref DomainHostedZoneId
+      AliasTarget:
+        DNSName: !GetAtt ApiGatewayCustomDomainName.RegionalDomainName
+        HostedZoneId: !GetAtt ApiGatewayCustomDomainName.RegionalHostedZoneId
 
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub ${Project}-HelloWorld
       CodeUri: ./app/lambda/hello-world
       Events:
         API:
